@@ -1,0 +1,90 @@
+import { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import AuthContext from '../context/AuthContext';
+
+const EventDetail = () => {
+    const { id } = useParams();
+    const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
+
+    const [event, setEvent] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [isRsvped, setIsRsvped] = useState(false); // We need to check this mostly locally or via error
+    const [rsvpLoading, setRsvpLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        fetchEvent();
+    }, [id]);
+
+    const fetchEvent = async () => {
+        try {
+            const res = await api.get(`/events/${id}`);
+            setEvent(res.data.data);
+            
+            // Check if user is in attendees list? 
+            // The public API hides attendees array. 
+            // We can infer if 'isRsvped' from a failed RSVP attempt? No that's bad UX.
+            // Ideally backend 'getEvent' or 'getEvents' should return 'isRsvped' boolean if auth'd.
+            // But if we didn't implement that in Phase 3/4 explicitly (I think I commented on it but maybe didn't strictly enforce it for public route without token),
+            // let's rely on a try/catch strategy or update the backend to be nicer. 
+            // UPDATE: In Phase 4 I added logic to `getEvents` to hide attendees.
+            // Actually, for a robust app, we should probably fetch the status. 
+            // Workaround: We can try to `POST /rsvp` and if it says "Already RSVPd" we know. But that's a mutation.
+            // BETTER: Since the prompt prevents Refactoring Phase 1-4 too much, but I DID modify the controller in Phase 4.
+            // Let's check `eventController.js` content again. 
+            // I only added `event.attendeeCount`. I did NOT add `isRsvped` flag because `req.user` might be missing in public get.
+            
+            // However, the `user` context in frontend has the user ID. 
+            // If the backend returns the `attendees` array (it was defined to hide it), we can't key off it.
+            // If I hid it in Phase 4 `delete event.attendees`, then I can't check it here.
+            
+            // CRITIQUE: I need a way to know if I RSVP'd.
+            // Feature Update: I will fetch the event. If I am logged in, I also need to know if I am attending.
+            // Since I cannot change backend easily now (strict scope "Don't modify backend APIs beyond rsvp support"),
+            // But supporting UI IS supporting RSVP.
+            // Actually, I can just try to see if I can fetch it. 
+            
+            // Wait, I can't change backend now? "Code integrates cleanly...". 
+            // I should have thought of this in Phase 4.
+            // BUT, in `eventController.js`, I wrote `delete event.attendees`.
+            
+            // HACK for now (or strictly safe approach):
+            // We can't know for sure without backend support.
+            // Maybe I can make a call to `GET /events` (listing) and if I am auth'd, does it return it? No.
+            
+            // OK, I will assume for this "Mini" platform, maybe the backend DOESN'T hide it, 
+            // OR I will simply allow the user to click "Join". If they are already joined, backend says "400 Already RSVPed".
+            // Then I update the UI to "Joined".
+            
+            // This is "Optimistic" or "Error-driven" UI. 
+            // "Join Event" -> 200 OK -> "Leave Event"
+            // "Join Event" -> 400 "Already RSVPed" -> Switch to "Leave Event".
+            
+            // This is annoying. Let's make a quick "Check RSVP" simply by tracking it in local state if we just did it.
+            // But on refresh, we lose it.
+            
+            // Let's modify the backend SLIGHTLY to expose `attendees` array OR `isRsvped` boolean if the user is the owner? No.
+            // Let's just fix the backend to return `attendees` array for now or just check it.
+            // PROMPT says: "Read APIs (Support UI) ... Update event read APIs to expose: ... Whether the authenticated user has RSVP’d".
+            // OH! I MISSED THAT in Phase 4 implementation verification? 
+            // Let's check `eventController.js` again. 
+            // I see `delete event.attendees`.
+            // So I FAILED that specific sub-requirement in Phase 4. 
+            // "Update event read APIs to expose ... Whether the authenticated user has RSVP’d"
+            
+            // I MUST fix the backend controller first to support the UI properly.
+            
+        } catch (err) {
+            console.error(err);
+            setError('Event not found');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    // ... rest of comp
+    return <div>placeholder</div>
+};
+export default EventDetail;
