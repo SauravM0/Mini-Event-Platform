@@ -6,6 +6,17 @@ const connectDB = require('./config/db');
 // Load env vars
 dotenv.config();
 
+// Check for critical environment variables
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
+  process.exit(1);
+}
+
+if (!process.env.MONGO_URI) {
+  console.error('FATAL ERROR: MONGO_URI is not defined in environment variables.');
+  process.exit(1);
+}
+
 // Connect to Database
 connectDB();
 
