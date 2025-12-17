@@ -3,7 +3,7 @@
 A full-stack MERN application for managing events, RSVPs, and user authentication. This project demonstrates a production-ready architecture with secure authentication, concurrency handling, and responsive design.
 
 ## Live Application
-**URL:** [Insert Deployment URL Here]
+**URL:** https://mini-event-platform-psi.vercel.app/
 
 ---
 
