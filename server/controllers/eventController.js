@@ -40,12 +40,96 @@ exports.createEvent = async (req, res) => {
     }
 };
 
+// @desc    Get user events
+// @route   GET /api/events/my-events
+// @access  Private
+exports.getMyEvents = async (req, res) => {
+    try {
+        const events = await Event.find({ createdBy: req.user.id })
+            .sort({ date: 1 })
+            .lean();
+
+        const eventsWithCount = events.map(event => ({
+            ...event,
+            attendeeCount: event.attendees ? event.attendees.length : 0,
+            attendees: undefined
+        }));
+
+        res.status(200).json({
+            success: true,
+            count: eventsWithCount.length,
+            data: eventsWithCount
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+// @desc    Get user RSVPs
+// @route   GET /api/events/my-rsvps
+// @access  Private
+exports.getMyRSVPs = async (req, res) => {
+    try {
+        const events = await Event.find({ attendees: req.user.id })
+            .sort({ date: 1 })
+            .populate('createdBy', 'email')
+            .lean();
+
+        const eventsWithCount = events.map(event => ({
+            ...event,
+            attendeeCount: event.attendees ? event.attendees.length : 0,
+            attendees: undefined,
+            isRsvped: true
+        }));
+
+        res.status(200).json({
+            success: true,
+            count: eventsWithCount.length,
+            data: eventsWithCount
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
 // @desc    Get all events
 // @route   GET /api/events
 // @access  Public
 exports.getEvents = async (req, res) => {
     try {
-        const events = await Event.find()
+        const { title, category, date } = req.query;
+        let query = {};
+
+        // Search by Title (Case Insensitive)
+        if (title) {
+            query.title = { $regex: title, $options: 'i' };
+        }
+
+        // Filter by Category
+        if (category && category !== 'All') {
+            query.category = category;
+        }
+
+        // Filter by Date
+        if (date) {
+            // Selected Date: Match entire day
+            const selectedDate = new Date(date);
+            const nextDay = new Date(selectedDate);
+            nextDay.setDate(selectedDate.getDate() + 1);
+
+            query.date = {
+                $gte: selectedDate,
+                $lt: nextDay
+            };
+        } else {
+            // Default: Upcoming events only (including today)
+            // Using a slightly past time to include current events that might have just started
+            query.date = { $gte: new Date() };
+        }
+
+        const events = await Event.find(query)
             .sort({ date: 1 })
             .populate('createdBy', 'email')
             .lean();

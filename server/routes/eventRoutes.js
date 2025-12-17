@@ -2,6 +2,8 @@ const express = require('express');
 const {
     createEvent,
     getEvents,
+    getMyEvents,
+    getMyRSVPs,
     getEvent,
     updateEvent,
     deleteEvent,
@@ -12,6 +14,12 @@ const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
 const router = express.Router();
+
+router.route('/my-events')
+    .get(protect, getMyEvents);
+
+router.route('/my-rsvps')
+    .get(protect, getMyRSVPs);
 
 router.route('/')
     .get(getEvents)

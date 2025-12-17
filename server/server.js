@@ -26,7 +26,7 @@ const app = express();
 app.use(express.json());
 
 // CORS Configuration
-const clientUrl = process.env.CLIENT_URL || '*';
+const clientUrl = (process.env.CLIENT_URL || '*').replace(/\/$/, "");
 app.use(cors({
   origin: clientUrl,
   credentials: true
@@ -57,6 +57,7 @@ const eventRoutes = require('./routes/eventRoutes');
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Set static folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
